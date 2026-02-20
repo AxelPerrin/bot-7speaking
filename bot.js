@@ -360,6 +360,277 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // GÉNÉRATION D'ERREURS INTELLIGENTES
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    // Dictionnaire de mots par thème (anglais business/professionnel)
+    const THEME_WORDS = {
+        business: ['meeting', 'report', 'budget', 'strategy', 'project', 'deadline', 'client', 'revenue', 'profit', 'market', 'sales', 'growth', 'target', 'team', 'manager', 'stakeholder', 'performance', 'objective', 'outcome', 'initiative'],
+        communication: ['email', 'message', 'phone', 'letter', 'presentation', 'speech', 'feedback', 'discussion', 'conversation', 'negotiation', 'agreement', 'confirmation', 'response', 'inquiry', 'request', 'proposal', 'statement', 'announcement', 'briefing', 'summary'],
+        management: ['leadership', 'supervision', 'coordination', 'planning', 'organizing', 'directing', 'controlling', 'delegating', 'motivating', 'evaluating', 'coaching', 'mentoring', 'decision', 'authority', 'responsibility', 'accountability', 'hierarchy', 'structure', 'policy', 'procedure'],
+        finance: ['investment', 'expense', 'income', 'balance', 'asset', 'liability', 'equity', 'dividend', 'interest', 'loan', 'credit', 'debit', 'transaction', 'account', 'payment', 'invoice', 'receipt', 'audit', 'forecast', 'valuation'],
+        marketing: ['campaign', 'brand', 'promotion', 'advertising', 'customer', 'segment', 'survey', 'analysis', 'research', 'competitor', 'positioning', 'pricing', 'distribution', 'channel', 'content', 'social', 'digital', 'engagement', 'conversion', 'retention'],
+        technology: ['software', 'hardware', 'network', 'database', 'security', 'system', 'platform', 'digital', 'interface', 'application', 'development', 'integration', 'automation', 'analytics', 'cloud', 'server', 'device', 'innovation', 'upgrade', 'implementation'],
+        hr: ['recruitment', 'training', 'development', 'compensation', 'benefits', 'employee', 'workforce', 'talent', 'culture', 'diversity', 'inclusion', 'onboarding', 'retention', 'engagement', 'performance', 'appraisal', 'promotion', 'termination', 'contract', 'policy'],
+        general: ['important', 'necessary', 'available', 'successful', 'effective', 'efficient', 'specific', 'relevant', 'significant', 'appropriate', 'professional', 'excellent', 'complete', 'accurate', 'current', 'previous', 'following', 'additional', 'particular', 'essential']
+    };
+
+    // Mots similaires pour créer des erreurs plausibles
+    const SIMILAR_WORDS = {
+        'a': ['account', 'action', 'address', 'advance', 'advice', 'affect', 'agree', 'amount', 'annual', 'answer', 'apply', 'approach', 'approve', 'arrange', 'assist', 'assume', 'attach', 'attend', 'average', 'avoid'],
+        'b': ['balance', 'because', 'before', 'benefit', 'between', 'beyond', 'board', 'branch', 'brief', 'budget', 'build', 'business', 'buyer', 'below', 'basic', 'begin', 'believe', 'belong', 'beside', 'better'],
+        'c': ['cancel', 'capable', 'capital', 'career', 'careful', 'central', 'certain', 'change', 'charge', 'choice', 'clear', 'client', 'close', 'comment', 'common', 'company', 'compare', 'complete', 'concern', 'confirm'],
+        'd': ['damage', 'deadline', 'debate', 'decide', 'declare', 'decline', 'decrease', 'define', 'deliver', 'demand', 'depend', 'describe', 'design', 'detail', 'determine', 'develop', 'different', 'difficult', 'direct', 'discuss'],
+        'e': ['economic', 'effective', 'efficient', 'effort', 'either', 'element', 'employ', 'enable', 'encourage', 'engage', 'enhance', 'enough', 'ensure', 'entire', 'entry', 'environment', 'equal', 'establish', 'evaluate', 'exactly'],
+        'f': ['facility', 'factor', 'failure', 'familiar', 'feature', 'feedback', 'figure', 'final', 'finance', 'finding', 'flexible', 'focus', 'follow', 'forecast', 'foreign', 'formal', 'former', 'forward', 'frequent', 'function'],
+        'g': ['gather', 'general', 'generate', 'global', 'goal', 'goods', 'government', 'gradually', 'grant', 'graphic', 'greatly', 'ground', 'group', 'growth', 'guarantee', 'guidance', 'guide', 'genuine', 'given', 'gain'],
+        'h': ['handle', 'happen', 'hardly', 'heading', 'health', 'helpful', 'highlight', 'highly', 'history', 'holder', 'honest', 'however', 'human', 'hypothesis', 'hire', 'horizon', 'hosting', 'hourly', 'housing', 'huge'],
+        'i': ['identify', 'ignore', 'illustrate', 'immediate', 'impact', 'implement', 'import', 'improve', 'include', 'increase', 'indicate', 'individual', 'industry', 'influence', 'inform', 'initial', 'inside', 'instance', 'instead', 'intend'],
+        'j': ['job', 'join', 'joint', 'journal', 'journey', 'judge', 'judgment', 'junior', 'justify', 'junction', 'jumble', 'jungle', 'jacket', 'jargon', 'jealous', 'jeopardy', 'jetlag', 'jewel', 'jobless', 'jockey'],
+        'k': ['keen', 'keep', 'kernel', 'key', 'keyboard', 'keyword', 'kind', 'kindly', 'kingdom', 'kitchen', 'knowledge', 'known', 'kickoff', 'keeper', 'keeping', 'keynote', 'kickstart', 'kinetic', 'kiosk', 'knack'],
+        'l': ['label', 'labor', 'lack', 'language', 'large', 'largely', 'later', 'latest', 'launch', 'layer', 'leader', 'leading', 'learn', 'least', 'leave', 'legal', 'length', 'level', 'likely', 'limit'],
+        'm': ['machine', 'magazine', 'maintain', 'major', 'majority', 'manage', 'manager', 'manner', 'manual', 'manufacture', 'margin', 'market', 'master', 'material', 'matter', 'maximum', 'measure', 'medium', 'member', 'mention'],
+        'n': ['narrow', 'nation', 'natural', 'nature', 'nearby', 'nearly', 'necessary', 'negative', 'negotiate', 'network', 'neutral', 'never', 'newly', 'nominal', 'normal', 'notable', 'notice', 'notion', 'nuclear', 'number'],
+        'o': ['object', 'objective', 'observe', 'obtain', 'obvious', 'occasion', 'occupy', 'occur', 'offer', 'office', 'official', 'often', 'online', 'operate', 'opinion', 'opportunity', 'opposite', 'option', 'order', 'ordinary'],
+        'p': ['package', 'panel', 'paper', 'parallel', 'parent', 'partial', 'participate', 'particular', 'partner', 'passage', 'patient', 'pattern', 'payment', 'percent', 'perfect', 'perform', 'perhaps', 'period', 'permit', 'person'],
+        'q': ['qualify', 'quality', 'quantity', 'quarter', 'query', 'question', 'quick', 'quickly', 'quiet', 'quite', 'quota', 'quotation', 'quote', 'quarterly', 'questionnaire', 'queue', 'quorum', 'quotient', 'quantum', 'quasi'],
+        'r': ['raise', 'random', 'range', 'rapid', 'rarely', 'rather', 'ratio', 'reach', 'react', 'reader', 'ready', 'reality', 'realize', 'really', 'reason', 'receive', 'recent', 'recognize', 'recommend', 'record'],
+        's': ['safety', 'salary', 'sample', 'satisfy', 'saving', 'scale', 'scenario', 'schedule', 'scheme', 'scope', 'screen', 'search', 'season', 'section', 'sector', 'secure', 'segment', 'select', 'senior', 'sense'],
+        't': ['table', 'tackle', 'talent', 'target', 'task', 'team', 'technical', 'technique', 'technology', 'temporary', 'tendency', 'term', 'test', 'therefore', 'thorough', 'though', 'thought', 'threat', 'through', 'timeline'],
+        'u': ['ultimate', 'unable', 'uncertain', 'undergo', 'understand', 'undertake', 'unexpected', 'uniform', 'unique', 'unit', 'universal', 'unless', 'unlike', 'unlikely', 'update', 'upgrade', 'upload', 'upon', 'upper', 'urban'],
+        'v': ['valid', 'valuable', 'value', 'variable', 'variety', 'various', 'vendor', 'venture', 'verify', 'version', 'vertical', 'very', 'via', 'view', 'virtual', 'visible', 'vision', 'visit', 'visual', 'vital'],
+        'w': ['wage', 'wait', 'warning', 'warranty', 'waste', 'watch', 'weakness', 'wealth', 'weekly', 'weight', 'welcome', 'welfare', 'whereas', 'whether', 'whole', 'widely', 'willing', 'withdraw', 'within', 'workforce'],
+        'x': ['xerox', 'xml', 'xray', 'export', 'expand', 'express', 'extend', 'extreme', 'exchange', 'execute'],
+        'y': ['year', 'yearly', 'yield', 'young', 'yourself', 'youth', 'yesterday', 'yardstick', 'yearbook', 'yearn'],
+        'z': ['zone', 'zero', 'zenith', 'zeal', 'zealous', 'zigzag', 'zinc', 'zoning', 'zoom', 'zipcode']
+    };
+
+    // Fonction pour extraire les indices de la question
+    function extractHints() {
+        const hints = {
+            firstLetter: null,
+            wordLength: null,
+            pattern: null,
+            visibleLetters: []
+        };
+
+        // Chercher les indices dans le DOM
+        const questionContainer = document.querySelector('.question-container, .question__form, .question_content');
+        if (!questionContainer) return hints;
+
+        // Chercher un pattern comme "_ _ _ _ _" ou "a _ _ _ _" (lettres avec underscores)
+        const allText = questionContainer.innerText || '';
+        
+        // Pattern: lettres séparées par des espaces avec des underscores
+        const underscorePattern = allText.match(/([a-zA-Z_]\s)+[a-zA-Z_]/g);
+        if (underscorePattern) {
+            const pattern = underscorePattern[0].replace(/\s/g, '');
+            hints.pattern = pattern;
+            hints.wordLength = pattern.length;
+            
+            // Extraire les lettres visibles
+            for (let i = 0; i < pattern.length; i++) {
+                if (pattern[i] !== '_') {
+                    hints.visibleLetters.push({ pos: i, letter: pattern[i].toLowerCase() });
+                    if (i === 0) hints.firstLetter = pattern[i].toLowerCase();
+                }
+            }
+        }
+
+        // Chercher les éléments avec des indices de première lettre
+        const hintElements = questionContainer.querySelectorAll('.hint, .clue, .first-letter, [class*="hint"], [class*="clue"]');
+        hintElements.forEach(el => {
+            const text = el.textContent.trim();
+            if (text.length === 1 && /[a-zA-Z]/.test(text)) {
+                hints.firstLetter = text.toLowerCase();
+            }
+        });
+
+        // Chercher dans les placeholders des inputs
+        const inputs = questionContainer.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            const placeholder = input.placeholder || '';
+            const match = placeholder.match(/^([a-zA-Z])/);
+            if (match) {
+                hints.firstLetter = match[1].toLowerCase();
+            }
+            // Chercher la longueur attendue
+            const lengthMatch = placeholder.match(/(\d+)\s*(letters?|caractères?|chars?)/i);
+            if (lengthMatch) {
+                hints.wordLength = parseInt(lengthMatch[1]);
+            }
+        });
+
+        // Chercher dans les spans individuels (souvent utilisés pour les blancs)
+        const letterSpans = questionContainer.querySelectorAll('.letter, .char, .blank, [class*="letter"], [class*="blank"]');
+        if (letterSpans.length > 0) {
+            hints.wordLength = letterSpans.length;
+            letterSpans.forEach((span, i) => {
+                const letter = span.textContent.trim();
+                if (letter.length === 1 && /[a-zA-Z]/.test(letter)) {
+                    hints.visibleLetters.push({ pos: i, letter: letter.toLowerCase() });
+                    if (i === 0) hints.firstLetter = letter.toLowerCase();
+                }
+            });
+        }
+
+        log('Indices détectés:', hints);
+        return hints;
+    }
+
+    // Fonction pour obtenir le thème/module actuel
+    function getCurrentTheme() {
+        // Chercher le titre du module dans différents endroits
+        const titleSelectors = [
+            '.module-title',
+            '.lesson-title', 
+            '.activity-title',
+            '.breadcrumb',
+            'h1', 'h2',
+            '.header-title',
+            '[class*="title"]'
+        ];
+
+        let themeText = '';
+        for (const sel of titleSelectors) {
+            const el = document.querySelector(sel);
+            if (el && el.textContent.trim()) {
+                themeText = el.textContent.toLowerCase();
+                break;
+            }
+        }
+
+        // Aussi regarder l'URL
+        const pathParts = location.pathname.toLowerCase().split('/');
+        themeText += ' ' + pathParts.join(' ');
+
+        // Déterminer le thème basé sur les mots-clés
+        if (/business|entreprise|corporate|company/i.test(themeText)) return 'business';
+        if (/communicat|email|phone|letter|writing/i.test(themeText)) return 'communication';
+        if (/manage|leader|team|supervision/i.test(themeText)) return 'management';
+        if (/finance|money|budget|invest|account/i.test(themeText)) return 'finance';
+        if (/market|brand|advertis|customer|sales/i.test(themeText)) return 'marketing';
+        if (/tech|software|computer|digital|IT/i.test(themeText)) return 'technology';
+        if (/HR|recruit|human|employee|staff/i.test(themeText)) return 'hr';
+
+        return 'general';
+    }
+
+    // Fonction principale pour générer une mauvaise réponse intelligente
+    function generateSmartWrongAnswer(correctAnswer) {
+        const hints = extractHints();
+        const theme = getCurrentTheme();
+        
+        log('Génération erreur intelligente - Réponse correcte:', correctAnswer, 'Thème:', theme);
+
+        // STRATÉGIE 1: Si on a une première lettre, chercher un mot qui correspond
+        if (hints.firstLetter) {
+            const letter = hints.firstLetter.toLowerCase();
+            const wordsWithLetter = SIMILAR_WORDS[letter] || [];
+            
+            // Filtrer les mots de longueur similaire si on connaît la longueur
+            let candidates = wordsWithLetter.filter(w => w.toLowerCase() !== correctAnswer.toLowerCase());
+            
+            if (hints.wordLength) {
+                // Préférer les mots de même longueur ou +/- 1
+                const sameLengthWords = candidates.filter(w => Math.abs(w.length - hints.wordLength) <= 1);
+                if (sameLengthWords.length > 0) {
+                    candidates = sameLengthWords;
+                }
+            }
+
+            // Vérifier si d'autres lettres sont visibles et filtrer
+            if (hints.visibleLetters.length > 1) {
+                const partialMatch = candidates.filter(w => {
+                    // Le mot doit avoir au moins quelques lettres qui matchent (mais pas toutes)
+                    let matches = 0;
+                    for (const vl of hints.visibleLetters) {
+                        if (w.length > vl.pos && w[vl.pos].toLowerCase() === vl.letter) {
+                            matches++;
+                        }
+                    }
+                    // On veut des mots qui matchent partiellement (erreur plausible)
+                    return matches >= 1 && matches < hints.visibleLetters.length;
+                });
+                if (partialMatch.length > 0) {
+                    candidates = partialMatch;
+                }
+            }
+
+            if (candidates.length > 0) {
+                const wrongWord = candidates[rand(0, candidates.length - 1)];
+                log('Erreur générée (première lettre):', wrongWord);
+                return wrongWord;
+            }
+        }
+
+        // STRATÉGIE 2: Utiliser le thème du module
+        const themeWords = THEME_WORDS[theme] || THEME_WORDS.general;
+        let candidates = themeWords.filter(w => w.toLowerCase() !== correctAnswer.toLowerCase());
+
+        // Si on a la longueur, filtrer
+        if (hints.wordLength) {
+            const sameLengthWords = candidates.filter(w => Math.abs(w.length - hints.wordLength) <= 2);
+            if (sameLengthWords.length > 0) {
+                candidates = sameLengthWords;
+            }
+        }
+
+        // Si on a la longueur de la bonne réponse, utiliser ça
+        if (correctAnswer && candidates.length > 0) {
+            const similarLength = candidates.filter(w => Math.abs(w.length - correctAnswer.length) <= 2);
+            if (similarLength.length > 0) {
+                candidates = similarLength;
+            }
+        }
+
+        if (candidates.length > 0) {
+            const wrongWord = candidates[rand(0, candidates.length - 1)];
+            log('Erreur générée (thème):', wrongWord);
+            return wrongWord;
+        }
+
+        // STRATÉGIE 3: Modifier légèrement la bonne réponse (faute de frappe plausible)
+        if (correctAnswer && correctAnswer.length > 3) {
+            const modifications = [
+                // Supprimer une lettre
+                () => {
+                    const pos = rand(1, correctAnswer.length - 2);
+                    return correctAnswer.slice(0, pos) + correctAnswer.slice(pos + 1);
+                },
+                // Doubler une lettre
+                () => {
+                    const pos = rand(1, correctAnswer.length - 2);
+                    return correctAnswer.slice(0, pos) + correctAnswer[pos] + correctAnswer.slice(pos);
+                },
+                // Changer une lettre
+                () => {
+                    const pos = rand(1, correctAnswer.length - 2);
+                    const letters = 'abcdefghijklmnopqrstuvwxyz';
+                    const newLetter = letters[rand(0, 25)];
+                    return correctAnswer.slice(0, pos) + newLetter + correctAnswer.slice(pos + 1);
+                },
+                // Inverser deux lettres adjacentes
+                () => {
+                    const pos = rand(1, correctAnswer.length - 2);
+                    return correctAnswer.slice(0, pos) + correctAnswer[pos + 1] + correctAnswer[pos] + correctAnswer.slice(pos + 2);
+                }
+            ];
+            
+            const modification = modifications[rand(0, modifications.length - 1)];
+            const wrongWord = modification();
+            log('Erreur générée (modification):', wrongWord);
+            return wrongWord;
+        }
+
+        // Fallback: mot générique du thème
+        const fallbackWords = THEME_WORDS.general;
+        const wrongWord = fallbackWords[rand(0, fallbackWords.length - 1)];
+        log('Erreur générée (fallback):', wrongWord);
+        return wrongWord;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // QUIZ
     // ═══════════════════════════════════════════════════════════════════════════
     async function findQuizAnswer() {
@@ -447,7 +718,8 @@
 
         const input = document.querySelector('.question__form input, .question__form textarea');
         if (input) {
-            const text = shouldBeCorrect ? answer : 'incorrect';
+            const text = shouldBeCorrect ? answer : generateSmartWrongAnswer(answer);
+            log('Texte à saisir:', text, shouldBeCorrect ? '(correct)' : '(erreur intelligente)');
             input.focus();
             input.value = '';
             for (const char of text) {
